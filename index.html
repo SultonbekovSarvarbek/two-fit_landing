@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Two Fit — покупай и продавай абонементы 1Fit</title>
+<meta name="description" content="Two Fit — Telegram-бот, где покупают и продают абонементы 1Fit. Связь и сопровождение сделки — через оператора.">
+<meta property="og:title" content="Two Fit — абонементы 1Fit из рук в руки">
+<meta property="og:description" content="Покупай и продавай абонементы 1Fit. Связь и сопровождение сделки — через оператора.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#F2EEE3">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2315150F'/%3E%3Ctext x='32' y='44' font-family='Arial,sans-serif' font-weight='900' font-size='34' text-anchor='middle' fill='%23C6F432'%3E2F%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Onest:wght@400;500;600&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/*
+  Система
+  — Цвет: бумага #F2EEE3, чернила #15150F, один акцент — лайм #C6F432.
+  — Шрифты: Unbounded (заголовки), Onest (текст), JetBrains Mono (метки).
+  — Мотив: абонемент-талон с перфорацией; «два» = продавец и покупатель.
+  — Ритм: секции по 96–140px, контейнер 1180px, метка секции моноширинным над заголовком.
+*/
+:root {
+  --paper: #F2EEE3;
+  --paper-2: #E8E3D5;
+  --ink: #15150F;
+  --ink-2: #55544A;
+  --line: rgba(21, 21, 15, .16);
+  --lime: #C6F432;
+  --display: "Unbounded", "Arial Black", sans-serif;
+  --body: "Onest", "Helvetica Neue", Arial, sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --gutter: clamp(16px, 4vw, 40px);
+  --section: clamp(72px, 11vw, 140px);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 18px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+h1, h2, h3, p { margin: 0; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.04; letter-spacing: -.02em; text-wrap: balance; }
+p { text-wrap: pretty; }
+a { color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 var(--gutter); }
+.label {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+/* Кнопки */
+.btn {
+  display: inline-flex; align-items: center; gap: 12px;
+  min-height: 56px; padding: 0 26px;
+  border-radius: 999px;
+  font-family: var(--body); font-weight: 600; font-size: 17px;
+  text-decoration: none; white-space: nowrap;
+  transition: transform .18s ease, background-color .18s ease, color .18s ease;
+}
+.btn svg { width: 20px; height: 20px; flex: none; }
+.btn-ink { background: var(--ink); color: var(--paper); }
+.btn-ink:hover { background: var(--lime); color: var(--ink); transform: translateY(-2px); }
+.btn-lime { background: var(--lime); color: var(--ink); }
+.btn-lime:hover { background: var(--paper); transform: translateY(-2px); }
+.btn-sm { min-height: 44px; padding: 0 18px; font-size: 15px; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; border-radius: 6px; }
+.dark :focus-visible { outline-color: var(--lime); }
+
+/* Шапка */
+header { padding: 20px 0; }
+header .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.logo {
+  font-family: var(--display); font-weight: 800; font-size: 20px; letter-spacing: -.03em;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 10px;
+}
+.logo i {
+  display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px;
+  background: var(--ink); color: var(--lime); font-style: normal; font-size: 13px; letter-spacing: -.04em;
+}
+nav { display: flex; align-items: center; gap: 28px; }
+nav a.link { font-size: 15px; text-decoration: none; color: var(--ink-2); }
+nav a.link:hover { color: var(--ink); }
+
+/* Первый экран */
+.hero { padding: clamp(32px, 6vw, 72px) 0 var(--section); }
+.hero .wrap {
+  display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  gap: clamp(32px, 5vw, 72px); align-items: center;
+}
+.hero h1 { font-weight: 800; font-size: clamp(34px, 6.1vw, 80px); margin: 20px 0 28px; }
+.hero h1 mark {
+  background: var(--lime); color: inherit; padding: 0 .12em; border-radius: .12em;
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+}
+.hero .lead { font-size: clamp(18px, 1.7vw, 21px); color: var(--ink-2); max-width: 30em; }
+.hero .cta { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 22px; margin-top: 36px; }
+.hero .cta .label { text-transform: none; letter-spacing: 0; font-size: 14px; }
+
+/* Талоны */
+.tickets { position: relative; aspect-ratio: 1 / 1.2; max-width: 460px; width: 100%; margin: 0 auto; }
+.ticket {
+  position: absolute; width: 62%; padding: 22px 22px 20px;
+  border-radius: 22px;
+  -webkit-mask:
+    radial-gradient(circle 12px at left 67%, transparent 11.5px, #000 12px) left / 51% 100% no-repeat,
+    radial-gradient(circle 12px at right 67%, transparent 11.5px, #000 12px) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 12px at left 67%, transparent 11.5px, #000 12px) left / 51% 100% no-repeat,
+    radial-gradient(circle 12px at right 67%, transparent 11.5px, #000 12px) right / 51% 100% no-repeat;
+  display: flex; flex-direction: column;
+  aspect-ratio: 1 / 1.22;
+}
+.ticket .t-top { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.ticket .t-name { font-family: var(--display); font-weight: 800; font-size: clamp(24px, 2.6vw, 32px); line-height: 1; letter-spacing: -.03em; margin-top: 28px; }
+.ticket .t-sub { font-size: 15px; margin: 10px 0 0; opacity: .75; }
+.ticket .t-cut { height: 33%; margin-top: auto; padding-top: 20px; border-top: 2px dashed currentColor; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; }
+.ticket .t-cut b { font-family: var(--display); font-weight: 700; font-size: 14px; white-space: nowrap; letter-spacing: -.01em; text-transform: none; }
+.ticket.sell { background: var(--ink); color: var(--paper); left: 0; top: 0; transform: rotate(-7deg); }
+.ticket.sell .t-cut { border-color: rgba(242, 238, 227, .35); }
+.ticket.sell .t-cut b { color: var(--lime); }
+.ticket.buy { background: var(--lime); color: var(--ink); right: 0; bottom: 0; transform: rotate(5deg); }
+.ticket.buy .t-cut { border-color: rgba(21, 21, 15, .35); }
+.swap {
+  position: absolute; left: 36%; top: 37%; translate: -50% -50%;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: var(--paper); border: 2px solid var(--ink);
+  display: grid; place-items: center; z-index: 2;
+}
+.swap svg { width: 24px; height: 24px; }
+@media (prefers-reduced-motion: no-preference) {
+  .ticket { transition: transform .5s cubic-bezier(.2, .8, .2, 1); }
+  .tickets:hover .ticket.sell { transform: rotate(-10deg) translate(-8px, -6px); }
+  .tickets:hover .ticket.buy { transform: rotate(8deg) translate(8px, 6px); }
+}
+
+/* Секции */
+section { padding: var(--section) 0; }
+.rule { border-top: 1px solid var(--line); }
+.s-head { display: grid; gap: 18px; margin-bottom: clamp(36px, 5vw, 64px); max-width: 780px; }
+.s-head h2 { font-weight: 700; font-size: clamp(28px, 4.2vw, 52px); }
+
+/* Как это работает */
+.tabs { display: inline-flex; padding: 5px; border-radius: 999px; background: var(--paper-2); margin-bottom: clamp(28px, 4vw, 48px); }
+.tabs button {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  min-height: 48px; padding: 0 clamp(18px, 3vw, 30px); border-radius: 999px;
+  font-family: var(--body); font-weight: 600; font-size: 16px; color: var(--ink-2);
+  transition: background-color .18s ease, color .18s ease;
+}
+.tabs button[aria-selected="true"] { background: var(--ink); color: var(--paper); }
+.steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 2px solid var(--ink); }
+.steps li { padding: 28px 28px 8px 0; }
+.steps li + li { padding-left: 28px; border-left: 1px solid var(--line); }
+.steps .n { font-family: var(--display); font-weight: 800; font-size: clamp(44px, 6vw, 72px); line-height: 1; letter-spacing: -.04em; }
+.steps h3 { font-weight: 700; font-size: clamp(18px, 1.9vw, 22px); line-height: 1.2; margin: 22px 0 10px; }
+.steps p { color: var(--ink-2); font-size: 17px; }
+[hidden] { display: none !important; }
+
+/* Оператор */
+.dark { background: var(--ink); color: var(--paper); }
+.dark .label { color: rgba(242, 238, 227, .6); }
+.operator .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(36px, 6vw, 96px); align-items: start; }
+.operator h2 { font-weight: 700; font-size: clamp(28px, 4.2vw, 52px); margin-top: 18px; }
+.operator h2 em { font-style: normal; color: var(--lime); }
+.points { list-style: none; margin: 0; padding: 0; }
+.points li { padding: 26px 0; border-top: 1px solid rgba(242, 238, 227, .2); display: grid; grid-template-columns: 44px 1fr; gap: 8px 16px; }
+.points li:last-child { border-bottom: 1px solid rgba(242, 238, 227, .2); }
+.points .k { font-family: var(--mono); font-size: 13px; color: var(--lime); padding-top: 5px; }
+.points h3 { font-family: var(--body); font-weight: 600; font-size: 20px; letter-spacing: 0; line-height: 1.3; }
+.points p { grid-column: 2; color: rgba(242, 238, 227, .68); font-size: 17px; }
+
+/* Вопросы */
+.faq { max-width: 860px; }
+.faq details { border-top: 1px solid var(--line); }
+.faq details:last-child { border-bottom: 1px solid var(--line); }
+.faq summary {
+  list-style: none; cursor: pointer; padding: 24px 0; min-height: 44px;
+  display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  font-weight: 600; font-size: clamp(18px, 2vw, 21px); line-height: 1.3;
+}
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after {
+  content: ""; flex: none; width: 14px; height: 14px;
+  border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink);
+  transform: translateY(-4px) rotate(45deg); transition: transform .2s ease;
+}
+.faq details[open] summary::after { transform: translateY(3px) rotate(-135deg); }
+.faq details p { padding: 0 48px 26px 0; color: var(--ink-2); max-width: 44em; }
+
+/* Финал */
+.final { padding: 0 0 var(--gutter); }
+.final .box {
+  background: var(--lime); border-radius: clamp(24px, 3vw, 40px);
+  padding: clamp(40px, 8vw, 104px) clamp(24px, 6vw, 88px);
+  display: grid; gap: 32px; justify-items: start;
+}
+.final h2 { font-weight: 800; font-size: clamp(30px, 6vw, 76px); max-width: 12em; }
+.final .handle { font-family: var(--mono); font-size: 15px; }
+
+footer { padding: 28px 0 40px; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 32px; font-size: 14px; color: var(--ink-2); }
+footer p { max-width: 46em; }
+
+@media (max-width: 860px) {
+  body { font-size: 17px; }
+  nav a.link { display: none; }
+  .hero .wrap, .operator .wrap { grid-template-columns: minmax(0, 1fr); }
+  .tickets { max-width: 380px; margin-top: 12px; }
+  .steps { grid-template-columns: minmax(0, 1fr); border-top: 0; }
+  .steps li, .steps li + li { padding: 24px 0; border-left: 0; border-top: 2px solid var(--ink); display: grid; grid-template-columns: 72px 1fr; column-gap: 12px; }
+  .steps h3 { margin-top: 6px; }
+  .steps p { grid-column: 2; }
+  .tabs { display: flex; }
+  .tabs button { flex: 1; }
+  .faq details p { padding-right: 0; }
+  .final .btn { width: 100%; justify-content: center; }
+}
+@media (max-width: 420px) {
+  .hero .cta .btn { width: 100%; justify-content: center; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Two Fit"><i>2F</i>Two Fit</a>
+    <nav>
+      <a class="link" href="#how">Как это работает</a>
+      <a class="link" href="#operator">Оператор</a>
+      <a class="link" href="#faq">Вопросы</a>
+      <a class="btn btn-ink btn-sm" href="https://t.me/twofit_uz_bot" target="_blank" rel="noopener">Открыть бота</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <p class="label">Telegram-бот · @twofit_uz_bot</p>
+        <h1>Абонемент 1Fit ищет <mark>нового владельца</mark></h1>
+        <p class="lead">Two Fit — бот, где покупают и продают абонементы 1Fit. Связь и сопровождение сделки — через оператора.</p>
+        <div class="cta">
+          <a class="btn btn-ink" href="https://t.me/twofit_uz_bot" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.3 18.7 19.5c-.2 1.1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9.100-8.200c.4-.4-.1-.5-.6-.2L7.300 13.200 2.500 11.700c-1-.3-1.100-1 .2-1.500L20.600 3.300c.9-.3 1.600.2 1.300 1Z"/></svg>
+            Открыть в Telegram
+          </a>
+          <span class="label">Всё происходит в Telegram</span>
+        </div>
+      </div>
+
+      <div class="tickets" aria-hidden="true">
+        <div class="ticket sell">
+          <div class="t-top"><span>Two Fit</span><span>01</span></div>
+          <div class="t-name">Продаю</div>
+          <p class="t-sub">Абонемент 1Fit, который больше не нужен</p>
+          <div class="t-cut"><span>Сделка</span><b>через оператора</b></div>
+        </div>
+        <div class="swap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h15M15 4l4 4-4 4M20 16H5M9 12l-4 4 4 4"/></svg>
+        </div>
+        <div class="ticket buy">
+          <div class="t-top"><span>Two Fit</span><span>02</span></div>
+          <div class="t-name">Куплю</div>
+          <p class="t-sub">Абонемент 1Fit у прежнего владельца</p>
+          <div class="t-cut"><span>Сделка</span><b>через оператора</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how" class="rule">
+    <div class="wrap">
+      <div class="s-head">
+        <p class="label">Как это работает</p>
+        <h2>Три шага — и абонемент у нового владельца</h2>
+      </div>
+
+      <div class="tabs" role="tablist" aria-label="Кто вы">
+        <button role="tab" id="tab-buy" aria-controls="panel-buy" aria-selected="true">Хочу купить</button>
+        <button role="tab" id="tab-sell" aria-controls="panel-sell" aria-selected="false" tabindex="-1">Хочу продать</button>
+      </div>
+
+      <ol class="steps" id="panel-buy" role="tabpanel" aria-labelledby="tab-buy">
+        <li>
+          <div class="n">1</div>
+          <h3>Откройте бота</h3>
+          <p>Запустите @twofit_uz_bot в Telegram и выберите покупку.</p>
+        </li>
+        <li>
+          <div class="n">2</div>
+          <h3>Выберите абонемент</h3>
+          <p>Посмотрите предложения продавцов и отметьте то, что вам подходит.</p>
+        </li>
+        <li>
+          <div class="n">3</div>
+          <h3>Оператор проведёт сделку</h3>
+          <p>Он свяжется с вами и продавцом и останется на связи до конца.</p>
+        </li>
+      </ol>
+
+      <ol class="steps" id="panel-sell" role="tabpanel" aria-labelledby="tab-sell" hidden>
+        <li>
+          <div class="n">1</div>
+          <h3>Откройте бота</h3>
+          <p>Запустите @twofit_uz_bot в Telegram и выберите продажу.</p>
+        </li>
+        <li>
+          <div class="n">2</div>
+          <h3>Расскажите об абонементе</h3>
+          <p>Укажите, что продаёте и на каких условиях — бот подскажет, что нужно.</p>
+        </li>
+        <li>
+          <div class="n">3</div>
+          <h3>Оператор проведёт сделку</h3>
+          <p>Когда найдётся покупатель, оператор свяжет вас и сопроводит передачу.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="operator" class="operator dark">
+    <div class="wrap">
+      <div>
+        <p class="label">Зачем оператор</p>
+        <h2>Между продавцом и покупателем — <em>живой человек</em></h2>
+      </div>
+      <ul class="points">
+        <li>
+          <span class="k">01</span>
+          <h3>Связь — через оператора</h3>
+          <p>Не нужно искать вторую сторону по чатам и договариваться с незнакомцем напрямую.</p>
+        </li>
+        <li>
+          <span class="k">02</span>
+          <h3>Сопровождение сделки</h3>
+          <p>Оператор ведёт сделку от первой заявки до передачи абонемента.</p>
+        </li>
+        <li>
+          <span class="k">03</span>
+          <h3>Всё в одном месте</h3>
+          <p>Заявка, вопросы и сама сделка — в Telegram, без отдельных приложений и регистраций.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap">
+      <div class="s-head">
+        <p class="label">Вопросы</p>
+        <h2>Коротко о главном</h2>
+      </div>
+      <div class="faq">
+        <details open>
+          <summary>Что такое Two Fit?</summary>
+          <p>Это Telegram-бот, в котором можно купить или продать абонемент 1Fit. Продавец и покупатель встречаются в одном месте, а сделку сопровождает оператор.</p>
+        </details>
+        <details>
+          <summary>Как я свяжусь с продавцом или покупателем?</summary>
+          <p>Через оператора Two Fit. Он выходит на связь с обеими сторонами и ведёт сделку.</p>
+        </details>
+        <details>
+          <summary>С чего начать?</summary>
+          <p>Откройте @twofit_uz_bot в Telegram и нажмите «Start» — дальше бот подскажет шаги.</p>
+        </details>
+        <details>
+          <summary>Остались вопросы?</summary>
+          <p>Напишите в бота — оператор ответит и расскажет об условиях.</p>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <div class="box">
+        <p class="handle">@twofit_uz_bot</p>
+        <h2>Купить или продать — начните в боте</h2>
+        <a class="btn btn-ink" href="https://t.me/twofit_uz_bot" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.9 4.3 18.7 19.5c-.2 1.1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9.100-8.200c.4-.4-.1-.5-.6-.2L7.300 13.200 2.500 11.700c-1-.3-1.100-1 .2-1.500L20.600 3.300c.9-.3 1.600.2 1.300 1Z"/></svg>
+          Открыть в Telegram
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>© <span id="y">2026</span> Two Fit</p>
+    <p>Two Fit — независимый сервис. 1Fit — товарный знак его правообладателя.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var tabs = [].slice.call(document.querySelectorAll('[role="tab"]'));
+  function select(tab) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute('aria-selected', on);
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { select(t); });
+    t.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      select(next); next.focus();
+    });
+  });
+  document.getElementById('y').textContent = new Date().getFullYear();
+})();
+</script>
+</body>
+</html>
